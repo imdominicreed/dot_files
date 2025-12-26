@@ -1,0 +1,9 @@
+[user]
+	name = imdominicreed
+	email = domino.r33d@gmail.com
+
+[core]
+  sshCommand = ssh -i /home/dominic/.ssh/id_ed25519
+	excludesfile = /home/dominic/.gitignore_global
+[credential]
+	helper = cache --timeout=2592000

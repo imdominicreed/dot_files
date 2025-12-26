@@ -1,0 +1,5 @@
+# Files to ignore when applying dotfiles
+README.md
+LICENSE
+.git
+.github
