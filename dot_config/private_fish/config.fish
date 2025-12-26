@@ -48,5 +48,5 @@ end
 
 
 ### Posh Setup
-oh-my-posh init --config "bubblesline" fish | source
+oh-my-posh init --config "./themes/bubbleleft.json" fish | source
 
