@@ -39,12 +39,13 @@ return {
 
 		-- Register groups
 		wk.add({
-			{ "<leader>f", group = "Find" },
+			{ "<leader>s", group = "Search" },
 			{ "<leader>g", group = "Git" },
 			{ "<leader>l", group = "LSP" },
 			{ "<leader>d", group = "Debug" },
 			{ "<leader>c", group = "Code/AI" },
 			{ "<leader>w", group = "Workspace" },
+			{ "<leader>u", group = "UI" },
 		})
 	end,
 }
