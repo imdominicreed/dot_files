@@ -1,12 +1,16 @@
 # This file contains fish universal variable definitions.
 # VERSION: 3.0
-SETUVAR __fish_initialized:3800
+SETUVAR __fish_initialized:3400
 SETUVAR _fish_abbr_egrep:egrep\x20\x2d\x2dcolor\x3dauto
 SETUVAR _fish_abbr_fgrep:fgrep\x20\x2d\x2dcolor\x3dauto
 SETUVAR _fish_abbr_grep:grep\x20\x2d\x2dcolor\x3dauto
 SETUVAR _fish_abbr_l:ls\x20\x2dCF
 SETUVAR _fish_abbr_la:ls\x20\x2dA
 SETUVAR _fish_abbr_ll:ls\x20\x2dalF
+SETUVAR _fisher_edc_2F_bass_files:\x7e/\x2econfig/fish/functions/__bass\x2epy\x1e\x7e/\x2econfig/fish/functions/bass\x2efish
+SETUVAR _fisher_jorgebucaran_2F_fisher_files:\x7e/\x2econfig/fish/functions/fisher\x2efish\x1e\x7e/\x2econfig/fish/completions/fisher\x2efish
+SETUVAR _fisher_plugins:jorgebucaran/fisher\x1eedc/bass
+SETUVAR _fisher_upgraded_to_4_4:\x1d
 SETUVAR fish_color_autosuggestion:brblack
 SETUVAR fish_color_cancel:\x2dr
 SETUVAR fish_color_command:normal
@@ -43,4 +47,4 @@ SETUVAR fish_pager_color_selected_background:\x2dr
 SETUVAR fish_pager_color_selected_completion:\x1d
 SETUVAR fish_pager_color_selected_description:\x1d
 SETUVAR fish_pager_color_selected_prefix:\x1d
-SETUVAR fish_user_paths:/home/dominic/\x2envm/versions/node/v22\x2e13\x2e1/bin\x1e/home/dominic/\x2epyenv/bin\x1e/home/dominic/\x2elocal/bin\x1e/usr/local/bin
+SETUVAR fish_user_paths:/home/dom/go/bin\x1e/usr/local/go/bin\x1e/home/dom/\x2elocal/bin\x1e/home/dominic/\x2envm/versions/node/v22\x2e13\x2e1/bin\x1e/home/dominic/\x2epyenv/bin\x1e/home/dominic/\x2elocal/bin\x1e/usr/local/bin
