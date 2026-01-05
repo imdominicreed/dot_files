@@ -25,6 +25,8 @@ end
 fish_add_path /usr/local/bin
 fish_add_path $HOME/.local/bin
 fish_add_path $HOME/.pyenv/bin
+fish_add_path /usr/local/go/bin
+fish_add_path $HOME/go/bin
 
 # NVM node path (ensures NVM's node takes priority over system nodejs)
 set -l nvm_default_path "$HOME/.nvm/versions/node/v22.13.1/bin"
@@ -50,3 +52,5 @@ end
 ### Posh Setup
 oh-my-posh init --config "~/.config/fish/themes/bubbleleft.json" fish | source
 
+set -gx PATH "$HOME/.local/bin" $PATH
+fnm env --shell fish | source
