@@ -1,79 +1,119 @@
--- LSP Configuration
+-- LSP Configuration using native Neovim 0.11+ API
 return {
-	"neovim/nvim-lspconfig",
-	event = { "BufReadPre", "BufNewFile" },
-	dependencies = {
-		"mason.nvim",
-		"williamboman/mason-lspconfig.nvim",
-	},
-	config = function()
-		local lspconfig = require("lspconfig")
-
-		-- Diagnostic config
-		vim.diagnostic.config({
-			virtual_text = { prefix = "●" },
-			signs = true,
-			underline = true,
-			update_in_insert = false,
-			severity_sort = true,
-			float = { border = "rounded" },
-		})
-
-		-- LSP keymaps
-		local on_attach = function(client, bufnr)
-			local map = function(mode, lhs, rhs, desc)
-				vim.keymap.set(mode, lhs, rhs, { buffer = bufnr, desc = desc })
-			end
-
-			map("n", "gD", vim.lsp.buf.declaration, "Go to declaration")
-			map("n", "gd", vim.lsp.buf.definition, "Go to definition")
-			map("n", "K", vim.lsp.buf.hover, "Hover")
-			map("n", "gi", vim.lsp.buf.implementation, "Go to implementation")
-			map("n", "<leader>ls", vim.lsp.buf.signature_help, "Signature help")
-			map("n", "<leader>D", vim.lsp.buf.type_definition, "Type definition")
-			map("n", "<leader>ra", vim.lsp.buf.rename, "Rename")
-			map({ "n", "v" }, "<leader>ca", vim.lsp.buf.code_action, "Code action")
-			map("n", "gr", vim.lsp.buf.references, "References")
-			map("n", "<leader>lf", function()
-				vim.diagnostic.open_float({ border = "rounded" })
-			end, "Floating diagnostic")
-			map("n", "[d", function()
-				vim.diagnostic.goto_prev({ float = { border = "rounded" } })
-			end, "Previous diagnostic")
-			map("n", "]d", function()
-				vim.diagnostic.goto_next({ float = { border = "rounded" } })
-			end, "Next diagnostic")
-			map("n", "<leader>q", vim.diagnostic.setloclist, "Diagnostic loclist")
-			map("n", "<leader>wa", vim.lsp.buf.add_workspace_folder, "Add workspace folder")
-			map("n", "<leader>wr", vim.lsp.buf.remove_workspace_folder, "Remove workspace folder")
-			map("n", "<leader>wl", function()
-				print(vim.inspect(vim.lsp.buf.list_workspace_folders()))
-			end, "List workspace folders")
-		end
-
-		-- Capabilities
-		local capabilities = vim.lsp.protocol.make_client_capabilities()
-		capabilities.textDocument.completion.completionItem = {
-			documentationFormat = { "markdown", "plaintext" },
-			snippetSupport = true,
-			preselectSupport = true,
-			insertReplaceSupport = true,
-			labelDetailsSupport = true,
-			deprecatedSupport = true,
-			commitCharactersSupport = true,
-			tagSupport = { valueSet = { 1 } },
-			resolveSupport = {
-				properties = {
-					"documentation",
-					"detail",
-					"additionalTextEdits",
+	{
+		"williamboman/mason.nvim",
+		cmd = { "Mason", "MasonInstall", "MasonInstallAll", "MasonUpdate" },
+		opts = {
+			ensure_installed = {
+				-- LSP
+				"lua-language-server",
+				"gopls",
+				"rust-analyzer",
+				-- Formatters
+				"gofumpt",
+				"goimports-reviser",
+				"golines",
+				"stylua",
+			},
+			ui = {
+				icons = {
+					package_pending = " ",
+					package_installed = "󰄳 ",
+					package_uninstalled = " 󰚌",
 				},
 			},
-		}
+			max_concurrent_installers = 10,
+		},
+		config = function(_, opts)
+			require("mason").setup(opts)
 
-		-- Server configurations
-		local servers = {
-			lua_ls = {
+			-- Custom command to install all
+			vim.api.nvim_create_user_command("MasonInstallAll", function()
+				if opts.ensure_installed and #opts.ensure_installed > 0 then
+					vim.cmd("MasonInstall " .. table.concat(opts.ensure_installed, " "))
+				end
+			end, {})
+		end,
+	},
+	{
+		-- Dummy spec to trigger LSP setup after mason
+		name = "lsp-config",
+		dir = vim.fn.stdpath("config"),
+		event = { "BufReadPre", "BufNewFile" },
+		dependencies = { "mason.nvim" },
+		config = function()
+			-- Diagnostic config
+			vim.diagnostic.config({
+				virtual_text = { prefix = "●" },
+				signs = true,
+				underline = true,
+				update_in_insert = false,
+				severity_sort = true,
+				float = { border = "rounded" },
+			})
+
+			-- LSP keymaps via LspAttach autocmd
+			vim.api.nvim_create_autocmd("LspAttach", {
+				group = vim.api.nvim_create_augroup("UserLspConfig", {}),
+				callback = function(ev)
+					local bufnr = ev.buf
+					local map = function(mode, lhs, rhs, desc)
+						vim.keymap.set(mode, lhs, rhs, { buffer = bufnr, desc = desc })
+					end
+
+					map("n", "gD", vim.lsp.buf.declaration, "Go to declaration")
+					map("n", "gd", vim.lsp.buf.definition, "Go to definition")
+					map("n", "K", vim.lsp.buf.hover, "Hover")
+					map("n", "gi", vim.lsp.buf.implementation, "Go to implementation")
+					map("n", "<leader>ls", vim.lsp.buf.signature_help, "Signature help")
+					map("n", "<leader>D", vim.lsp.buf.type_definition, "Type definition")
+					map("n", "<leader>ra", vim.lsp.buf.rename, "Rename")
+					map({ "n", "v" }, "<leader>ca", vim.lsp.buf.code_action, "Code action")
+					map("n", "gr", vim.lsp.buf.references, "References")
+					map("n", "<leader>lf", function()
+						vim.diagnostic.open_float({ border = "rounded" })
+					end, "Floating diagnostic")
+					map("n", "[d", function()
+						vim.diagnostic.jump({ count = -1, float = { border = "rounded" } })
+					end, "Previous diagnostic")
+					map("n", "]d", function()
+						vim.diagnostic.jump({ count = 1, float = { border = "rounded" } })
+					end, "Next diagnostic")
+					map("n", "<leader>q", vim.diagnostic.setloclist, "Diagnostic loclist")
+					map("n", "<leader>wa", vim.lsp.buf.add_workspace_folder, "Add workspace folder")
+					map("n", "<leader>wr", vim.lsp.buf.remove_workspace_folder, "Remove workspace folder")
+					map("n", "<leader>wl", function()
+						print(vim.inspect(vim.lsp.buf.list_workspace_folders()))
+					end, "List workspace folders")
+				end,
+			})
+
+			-- Capabilities for completion
+			local capabilities = vim.lsp.protocol.make_client_capabilities()
+			capabilities.textDocument.completion.completionItem = {
+				documentationFormat = { "markdown", "plaintext" },
+				snippetSupport = true,
+				preselectSupport = true,
+				insertReplaceSupport = true,
+				labelDetailsSupport = true,
+				deprecatedSupport = true,
+				commitCharactersSupport = true,
+				tagSupport = { valueSet = { 1 } },
+				resolveSupport = {
+					properties = {
+						"documentation",
+						"detail",
+						"additionalTextEdits",
+					},
+				},
+			}
+
+			-- Native LSP server configurations (Neovim 0.11+)
+			vim.lsp.config["lua_ls"] = {
+				cmd = { "lua-language-server" },
+				filetypes = { "lua" },
+				root_markers = { ".luarc.json", ".luarc.jsonc", ".git" },
+				capabilities = capabilities,
 				settings = {
 					Lua = {
 						codeLens = { enable = true },
@@ -92,8 +132,13 @@ return {
 						},
 					},
 				},
-			},
-			gopls = {
+			}
+
+			vim.lsp.config["gopls"] = {
+				cmd = { "gopls" },
+				filetypes = { "go", "gomod", "gowork", "gotmpl" },
+				root_markers = { "go.work", "go.mod", ".git" },
+				capabilities = capabilities,
 				settings = {
 					gopls = {
 						buildFlags = { "--tags=cukes,awscliit" },
@@ -105,14 +150,11 @@ return {
 						},
 					},
 				},
-			},
-		}
+			}
 
-		-- Setup servers
-		for server, config in pairs(servers) do
-			config.on_attach = on_attach
-			config.capabilities = capabilities
-			lspconfig[server].setup(config)
-		end
-	end,
+			-- Enable LSP servers
+			vim.lsp.enable("lua_ls")
+			vim.lsp.enable("gopls")
+		end,
+	},
 }
