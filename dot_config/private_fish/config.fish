@@ -25,6 +25,7 @@ end
 fish_add_path /usr/local/bin
 fish_add_path $HOME/.local/bin
 fish_add_path $HOME/.pyenv/bin
+fish_add_path /opt/homebrew/bin
 fish_add_path /usr/local/go/bin
 fish_add_path $HOME/go/bin
 
@@ -49,8 +50,10 @@ if command -q pyenv
 end
 
 
+set -gx PATH "$HOME/.local/bin" $PATH
+fnm env --shell fish | source
+
 ### Posh Setup
 oh-my-posh init --config "~/.config/fish/themes/bubbleleft.json" fish | source
 
-set -gx PATH "$HOME/.local/bin" $PATH
-fnm env --shell fish | source
+

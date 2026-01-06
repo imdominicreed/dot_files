@@ -3,3 +3,5 @@ README.md
 LICENSE
 .git
 .github
+.gitignore
+.DS_STORE

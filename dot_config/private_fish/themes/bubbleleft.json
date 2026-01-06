@@ -1,5 +1,6 @@
 {
   "$schema": "https://raw.githubusercontent.com/JanDeDobbeleer/oh-my-posh/main/themes/schema.json",
+  "accent_color": "#9B6BDF",
   "blocks": [
     {
       "alignment": "left",
@@ -11,7 +12,10 @@
           "style": "diamond",
           "template": "{{ .UserName }}",
           "trailing_diamond": "\ue0b4 ",
-          "type": "session"
+          "type": "session",
+					"cache": {
+						"duration": "10s"
+					}
         },
         {
           "background": "#424242",
@@ -108,25 +112,6 @@
           "template": "\ue624{{ if .Error }}{{ .Error }}{{ else }}{{ .Full }}{{ end }}",
           "trailing_diamond": "\ue0b4",
           "type": "julia"
-        },
-        {
-          "background": "#424242",
-          "foreground": "#9B6BDF",
-          "foreground_templates": [
-            "{{if eq \"Charging\" .State.String}}#40c4ff{{end}}",
-            "{{if eq \"Discharging\" .State.String}}#ff5722{{end}}",
-            "{{if eq \"Full\" .State.String}}#4caf50{{end}}"
-          ],
-          "leading_diamond": " \ue0b6",
-          "options": {
-            "charged_icon": "\u25cf ",
-            "charging_icon": "\u21e1 ",
-            "discharging_icon": "\u21e3 "
-          },
-          "style": "diamond",
-          "template": "{{ if not .Error }}{{ .Icon }}{{ .Percentage }}{{ end }}{{ .Error }}",
-          "trailing_diamond": "\ue0b4",
-          "type": "battery"
         },
         {
           "foreground": "#FFFFFF",
