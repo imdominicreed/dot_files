@@ -9,6 +9,7 @@ return {
 				"lua-language-server",
 				"gopls",
 				"rust-analyzer",
+				"basedpyright",
 				-- Formatters
 				"gofumpt",
 				"goimports-reviser",
@@ -152,9 +153,26 @@ return {
 				},
 			}
 
+			vim.lsp.config["basedpyright"] = {
+				cmd = { "basedpyright-langserver", "--stdio" },
+				filetypes = { "python" },
+				root_markers = { "pyproject.toml", "setup.py", "setup.cfg", "requirements.txt", "pyrightconfig.json", ".git" },
+				capabilities = capabilities,
+				settings = {
+					basedpyright = {
+						analysis = {
+							autoSearchPaths = true,
+							useLibraryCodeForTypes = true,
+							diagnosticMode = "openFilesOnly",
+						},
+					},
+				},
+			}
+
 			-- Enable LSP servers
 			vim.lsp.enable("lua_ls")
 			vim.lsp.enable("gopls")
+			vim.lsp.enable("basedpyright")
 		end,
 	},
 }
