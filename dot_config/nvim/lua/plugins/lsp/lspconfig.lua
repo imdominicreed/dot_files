@@ -146,6 +146,7 @@ return {
 						verboseOutput = true,
 						completeUnimported = true,
 						gofumpt = true,
+						semanticTokens = true,
 						analyses = {
 							unusedparams = true,
 						},

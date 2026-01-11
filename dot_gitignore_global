@@ -2,3 +2,4 @@ CLAUDE.md
 /.claude
 .DS_STORE
 .serena/
+*.null-ls*
