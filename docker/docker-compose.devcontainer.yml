@@ -1,0 +1,107 @@
+# Base Dev Container docker-compose template
+# Copy to your project's .devcontainer/docker-compose.yml and customize
+#
+# Prerequisites:
+#   1. Start Traefik: docker compose -f ~/.local/share/chezmoi/docker/traefik/docker-compose.yml up -d
+#   2. Add DNS: echo "127.0.0.1 myproject.dev.local" | sudo tee -a /etc/hosts
+#
+# Usage:
+#   docker compose -f .devcontainer/docker-compose.yml up -d
+#   Access via: http://myproject.dev.local (frontend), http://myproject.dev.local:9999 (backend)
+
+services:
+  dev:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        USER_UID: ${USER_UID:-1000}
+        USER_GID: ${USER_GID:-1000}
+    volumes:
+      # Workspace - mount your project
+      - ..:/workspace:cached
+      # Chezmoi source from host (for dotfiles)
+      - ~/.local/share/chezmoi:/home/dev/.local/share/chezmoi:ro
+      # Claude config from host
+      - ~/.claude:/home/dev/.claude
+      # SSH keys for git
+      - ~/.ssh:/home/dev/.ssh:ro
+      # GitHub CLI config
+      - ~/.config/gh:/home/dev/.config/gh:ro
+      # Docker socket for Docker-from-Docker
+      - /var/run/docker.sock:/var/run/docker.sock
+      # Persist caches (optional - speeds up rebuilds)
+      - go-mod-cache:/home/dev/go/pkg/mod
+      - npm-cache:/home/dev/.npm
+    environment:
+      TERM: xterm-256color
+      PATH: "/home/dev/.local/bin:/home/dev/.local/share/fnm:/home/dev/go/bin:/usr/local/go/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+      # Add your project-specific env vars here:
+      # PORT: "8080"
+      # DATABASE_URL: postgres://postgres:postgres@db:5432/mydb?sslmode=disable
+    stdin_open: true
+    tty: true
+    command: sleep infinity
+    networks:
+      - traefik-dev
+      - default
+    # Uncomment if you need a database:
+    # depends_on:
+    #   db:
+    #     condition: service_healthy
+
+  # Frontend service (example - runs on port 3000)
+  # frontend:
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfile
+  #   command: npm run dev -- --host 0.0.0.0
+  #   working_dir: /workspace/frontend
+  #   volumes:
+  #     - ..:/workspace:cached
+  #   networks:
+  #     - traefik-dev
+  #   labels:
+  #     - "traefik.enable=true"
+  #     - "traefik.http.routers.myproject-frontend.rule=Host(`myproject.dev.local`)"
+  #     - "traefik.http.services.myproject-frontend.loadbalancer.server.port=3000"
+
+  # Backend service (example - runs on port 9999)
+  # backend:
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfile
+  #   command: go run ./cmd/server
+  #   working_dir: /workspace
+  #   volumes:
+  #     - ..:/workspace:cached
+  #   networks:
+  #     - traefik-dev
+  #   labels:
+  #     - "traefik.enable=true"
+  #     - "traefik.http.routers.myproject-backend.rule=Host(`api.myproject.dev.local`)"
+  #     - "traefik.http.services.myproject-backend.loadbalancer.server.port=9999"
+
+  # Uncomment for PostgreSQL:
+  # db:
+  #   image: postgres:16-alpine
+  #   environment:
+  #     POSTGRES_USER: postgres
+  #     POSTGRES_PASSWORD: postgres
+  #     POSTGRES_DB: mydb
+  #   volumes:
+  #     - postgres-data:/var/lib/postgresql/data
+  #   healthcheck:
+  #     test: ["CMD-SHELL", "pg_isready -U postgres"]
+  #     interval: 5s
+  #     timeout: 5s
+  #     retries: 5
+
+networks:
+  traefik-dev:
+    external: true
+
+volumes:
+  go-mod-cache:
+  npm-cache:
+  # postgres-data:

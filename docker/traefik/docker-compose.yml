@@ -1,0 +1,52 @@
+# Traefik reverse proxy for dev containers
+# Run once: docker compose -f ~/.local/share/chezmoi/docker/traefik/docker-compose.yml up -d
+#
+# Routes *.dev.local hostnames to containers based on labels
+# Binds to 127.0.0.2 so native dev (localhost/127.0.0.1) still works
+#
+# Access: http://myproject.dev.local:3000 (frontend)
+#         http://myproject.dev.local:9999 (backend)
+#
+# Requires: *.dev.local DNS → 127.0.0.2 (use dnsmasq or /etc/hosts)
+
+services:
+  traefik:
+    image: traefik:latest
+    container_name: traefik-dev
+    restart: unless-stopped
+    environment:
+      - DOCKER_API_VERSION=1.45
+    command:
+      - --api.insecure=true
+      - --api.dashboard=true
+      - --entrypoints.traefik.address=:8081
+      - --providers.docker=true
+      - --providers.docker.exposedbydefault=false
+      - --providers.docker.endpoint=unix:///var/run/docker.sock
+      # Common dev ports - add more as needed
+      - --entrypoints.port3000.address=:3000
+      - --entrypoints.port4000.address=:4000
+      - --entrypoints.port5000.address=:5000
+      - --entrypoints.port5173.address=:5173
+      - --entrypoints.port8000.address=:8000
+      - --entrypoints.port9999.address=:9999
+      - --entrypoints.port7070.address=:7070
+    ports:
+      # Binds to all interfaces - use hostname.dev.local:PORT to access
+      - "8081:8081"
+      - "3000:3000"
+      - "4000:4000"
+      - "5000:5000"
+      - "5173:5173"
+      - "8000:8000"
+      - "9999:9999"
+      - "7070:7070"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - traefik-dev
+
+networks:
+  traefik-dev:
+    name: traefik-dev
+    driver: bridge

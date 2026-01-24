@@ -1,0 +1,218 @@
+# Base Dev Container - dom's standard dev environment
+# Usage: Use as base image or copy to .devcontainer/Dockerfile
+#
+# Includes:
+#   - Go (latest), Node (via nvm), Docker CLI
+#   - chezmoi, claude CLI
+#   - ripgrep, fd, fzf, jq, yq, tmux, neovim
+#   - PostgreSQL client, networking tools
+#
+# Build args:
+#   GO_VERSION    - Go version (default: 1.25.5)
+#   NODE_VERSION  - Node major version (default: 24)
+#   USERNAME      - Dev user name (default: dev)
+#   USER_UID      - User UID (default: 1000)
+#   USER_GID      - User GID (default: 1000)
+
+FROM ubuntu:24.04
+
+ARG GO_VERSION=1.25.5
+ARG NODE_VERSION=24
+ARG USERNAME=dev
+ARG USER_UID=1000
+ARG USER_GID=1000
+
+# Install system packages and dev tools
+RUN apt-get update && apt-get install -y \
+    # Essentials
+    curl \
+    wget \
+    git \
+    make \
+    sudo \
+    locales \
+    ca-certificates \
+    gnupg \
+    # Shell and terminal
+    tmux \
+    zsh \
+    fish \
+    bash-completion \
+    # Dev tools
+    jq \
+    yq \
+    ripgrep \
+    fd-find \
+    fzf \
+    tree \
+    htop \
+    ncdu \
+    unzip \
+    zip \
+    # Networking
+    postgresql-client \
+    netcat-openbsd \
+    dnsutils \
+    iputils-ping \
+    # Build tools
+    build-essential \
+    pkg-config \
+    && rm -rf /var/lib/apt/lists/* \
+    && locale-gen en_US.UTF-8
+
+# Install latest neovim from GitHub releases
+RUN curl -fsSL https://github.com/neovim/neovim/releases/latest/download/nvim-linux-x86_64.tar.gz | tar -C /opt -xz \
+    && ln -sf /opt/nvim-linux-x86_64/bin/nvim /usr/local/bin/nvim
+
+# Create symlinks for tools with different names
+RUN ln -sf /usr/bin/fdfind /usr/local/bin/fd
+
+ENV LANG=en_US.UTF-8
+ENV LC_ALL=en_US.UTF-8
+
+# Create user - remove existing UID 1000 user if present, then create ours
+# Use fish as default shell
+RUN userdel -r $(getent passwd ${USER_UID} | cut -d: -f1) 2>/dev/null || true \
+    && groupdel $(getent group ${USER_GID} | cut -d: -f1) 2>/dev/null || true \
+    && groupadd --gid ${USER_GID} ${USERNAME} \
+    && useradd --uid ${USER_UID} --gid ${USER_GID} -m ${USERNAME} -s /usr/bin/fish \
+    && echo "${USERNAME} ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
+
+# Install chezmoi
+RUN curl -fsLS get.chezmoi.io | sh -s -- -b /usr/local/bin
+
+# Install Go
+RUN curl -fsSL "https://go.dev/dl/go${GO_VERSION}.linux-amd64.tar.gz" | tar -C /usr/local -xz
+ENV PATH="/usr/local/go/bin:${PATH}"
+ENV GOPATH="/home/${USERNAME}/go"
+ENV PATH="${GOPATH}/bin:${PATH}"
+
+# Install Docker CLI (for Docker-from-Docker) and GitHub CLI
+RUN install -m 0755 -d /etc/apt/keyrings \
+    && curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg \
+    && chmod a+r /etc/apt/keyrings/docker.gpg \
+    && echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo "$VERSION_CODENAME") stable" > /etc/apt/sources.list.d/docker.list \
+    && curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | gpg --dearmor -o /etc/apt/keyrings/githubcli-archive-keyring.gpg \
+    && echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" > /etc/apt/sources.list.d/github-cli.list \
+    && apt-get update \
+    && apt-get install -y docker-ce-cli docker-compose-plugin gh \
+    && rm -rf /var/lib/apt/lists/*
+
+# Add user to docker group
+RUN groupadd -f docker && usermod -aG docker ${USERNAME}
+
+# Switch to dev user for remaining setup
+USER ${USERNAME}
+WORKDIR /home/${USERNAME}
+
+# Install Node via nvm
+ENV NVM_DIR="/home/${USERNAME}/.nvm"
+RUN curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash \
+    && . "$NVM_DIR/nvm.sh" \
+    && nvm install ${NODE_VERSION} \
+    && nvm use ${NODE_VERSION} \
+    && nvm alias default ${NODE_VERSION}
+
+# Add nvm to shell profiles (bash, zsh, fish)
+RUN echo 'export NVM_DIR="$HOME/.nvm"' >> ~/.bashrc \
+    && echo '[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"' >> ~/.bashrc \
+    && echo 'export NVM_DIR="$HOME/.nvm"' >> ~/.zshrc 2>/dev/null || true \
+    && echo '[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"' >> ~/.zshrc 2>/dev/null || true \
+    && mkdir -p ~/.config/fish \
+    && echo 'set -gx NVM_DIR "$HOME/.nvm"' >> ~/.config/fish/config.fish \
+    && echo 'set -gx PATH "$NVM_DIR/versions/node/$(ls $NVM_DIR/versions/node | tail -1)/bin" $PATH 2>/dev/null' >> ~/.config/fish/config.fish
+
+# Install common Go tools
+RUN go install golang.org/x/tools/gopls@latest \
+    && go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest \
+    && go install github.com/go-delve/delve/cmd/dlv@latest \
+    && go install github.com/air-verse/air@latest
+
+# Install fnm (Fast Node Manager) - alternative to nvm with better fish support
+RUN curl -fsSL https://fnm.vercel.app/install | bash -s -- --install-dir /home/${USERNAME}/.local/share/fnm --skip-shell \
+    && /home/${USERNAME}/.local/share/fnm/fnm install ${NODE_VERSION} \
+    && /home/${USERNAME}/.local/share/fnm/fnm default ${NODE_VERSION}
+ENV PATH="/home/${USERNAME}/.local/share/fnm:${PATH}"
+
+# Install Claude CLI via npm (requires fnm/node)
+RUN eval "$(/home/${USERNAME}/.local/share/fnm/fnm env)" && npm install -g @anthropic-ai/claude-code
+
+# Add fnm and oh-my-posh to fish config (before chezmoi overwrites it)
+# Also create fish data dir with correct permissions
+RUN mkdir -p ~/.config/fish/conf.d ~/.local/share/fish ~/.local/state \
+    && chmod 755 ~/.local/share/fish \
+    && echo 'set -gx PATH /home/dev/.local/bin /home/dev/.local/share/fnm /home/dev/go/bin /usr/local/go/bin $PATH' > ~/.config/fish/conf.d/00-path.fish \
+    && echo 'fnm env --shell fish 2>/dev/null | source' >> ~/.config/fish/conf.d/00-path.fish
+
+# Install oh-my-posh (shell prompt)
+RUN mkdir -p /home/${USERNAME}/.local/bin \
+    && curl -fsSL https://ohmyposh.dev/install.sh | bash -s -- -d /home/${USERNAME}/.local/bin
+ENV PATH="/home/${USERNAME}/.local/bin:${PATH}"
+
+# Install TPM (Tmux Plugin Manager)
+RUN git clone https://github.com/tmux-plugins/tpm ~/.tmux/plugins/tpm
+
+WORKDIR /workspace
+
+# Set final PATH with all tools (ensures fish sees everything)
+ENV PATH="/home/dev/.local/bin:/home/dev/.local/share/fnm:/home/dev/go/bin:/usr/local/go/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+
+# Setup script for first-run initialization (idempotent)
+COPY --chmod=755 <<'EOF' /usr/local/bin/devcontainer-setup
+#!/bin/bash
+set -e
+
+SETUP_MARKER="$HOME/.devcontainer-setup-done"
+
+# Ensure fish directories exist (fixes permission errors)
+mkdir -p "$HOME/.local/share/fish" "$HOME/.local/state" 2>/dev/null || true
+
+# Always apply chezmoi (fast, handles updates)
+if [ -d "$HOME/.local/share/chezmoi" ]; then
+    echo "Applying chezmoi dotfiles..."
+    chezmoi apply --force 2>/dev/null || true
+fi
+
+# Skip heavy setup if already done
+if [ -f "$SETUP_MARKER" ]; then
+    exit 0
+fi
+
+echo "Running first-time setup..."
+
+# Install tmux plugins via TPM (if tmux.conf exists)
+if [ -f "$HOME/.tmux.conf" ] && [ -d "$HOME/.tmux/plugins/tpm" ]; then
+    echo "Installing tmux plugins..."
+    # TPM install script requires TMUX to not be running
+    "$HOME/.tmux/plugins/tpm/bin/install_plugins" 2>/dev/null || true
+fi
+
+# Setup neovim plugins (lazy.nvim auto-installs on first run)
+if [ -d "$HOME/.config/nvim" ]; then
+    echo "Setting up neovim plugins..."
+    # Run nvim headless to trigger lazy.nvim plugin installation
+    nvim --headless "+Lazy! sync" +qa 2>/dev/null || \
+    nvim --headless -c 'quitall' 2>/dev/null || true
+fi
+
+# Mark setup as complete
+touch "$SETUP_MARKER"
+echo "Setup complete!"
+EOF
+
+# Entrypoint - run setup then exec command
+COPY --chmod=755 <<'EOF' /usr/local/bin/devcontainer-entrypoint
+#!/bin/bash
+# Fix workspace ownership if needed
+if [ -d /workspace ] && [ ! -w /workspace ]; then
+    sudo chown -R $(id -u):$(id -g) /workspace 2>/dev/null || true
+fi
+
+# Run setup (idempotent - skips if already done)
+/usr/local/bin/devcontainer-setup
+
+exec "$@"
+EOF
+
+ENTRYPOINT ["/usr/local/bin/devcontainer-entrypoint"]
+CMD ["fish"]
