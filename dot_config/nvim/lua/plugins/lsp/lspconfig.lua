@@ -10,6 +10,7 @@ return {
 				"gopls",
 				"rust-analyzer",
 				"basedpyright",
+				"jdtls",
 				-- Formatters
 				"gofumpt",
 				"goimports-reviser",
@@ -170,10 +171,39 @@ return {
 				},
 			}
 
+			local jdk_home = "/opt/homebrew/opt/openjdk@21"
+			if vim.fn.isdirectory(jdk_home) == 1 then
+				vim.env.JAVA_HOME = jdk_home
+				vim.env.PATH = jdk_home .. "/bin:" .. vim.env.PATH
+			end
+
+			vim.lsp.config["jdtls"] = {
+				cmd = { "jdtls" },
+				filetypes = { "java" },
+				root_markers = { "pom.xml", "build.gradle", "build.gradle.kts", "mvnw", "gradlew", ".git" },
+				capabilities = capabilities,
+				settings = {
+					java = {
+						format = { enabled = false },
+						signatureHelp = { enabled = true },
+						completion = { favoriteStaticMembers = { "org.junit.jupiter.api.Assertions.*" } },
+					},
+				},
+			}
+
+			vim.lsp.config["rebar"] = {
+				cmd = { vim.fn.expand("~/go/bin/rebar"), "lsp" },
+				filetypes = { "go", "typescript", "typescriptreact", "javascript", "python", "rust", "java", "sh", "markdown" },
+				root_markers = { ".rebarrc", ".rebar" },
+				capabilities = capabilities,
+			}
+
 			-- Enable LSP servers
 			vim.lsp.enable("lua_ls")
 			vim.lsp.enable("gopls")
 			vim.lsp.enable("basedpyright")
+			vim.lsp.enable("jdtls")
+			vim.lsp.enable("rebar")
 		end,
 	},
 }

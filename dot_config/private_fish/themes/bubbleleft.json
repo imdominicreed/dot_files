@@ -1,13 +1,13 @@
 {
   "$schema": "https://raw.githubusercontent.com/JanDeDobbeleer/oh-my-posh/main/themes/schema.json",
-  "accent_color": "#9B6BDF",
+  "accent_color": "#7C3AED",
   "blocks": [
     {
       "alignment": "left",
       "segments": [
         {
-          "background": "#424242",
-          "foreground": "#9B6BDF",
+          "background": "#313244",
+          "foreground": "#7C3AED",
           "leading_diamond": "\ue0b6",
           "style": "diamond",
           "template": "{{ .UserName }}",
@@ -18,8 +18,8 @@
 					}
         },
         {
-          "background": "#424242",
-          "foreground": "#3EC669",
+          "background": "#313244",
+          "foreground": "#16A34A",
           "leading_diamond": "\ue0b6",
           "options": {
             "style": "folder"
@@ -30,8 +30,8 @@
           "type": "path"
         },
         {
-          "background": "#424242",
-          "foreground": "#43CCEA",
+          "background": "#313244",
+          "foreground": "#0891B2",
           "leading_diamond": " \ue0b6",
           "options": {
             "branch_icon": ""
@@ -42,8 +42,8 @@
           "type": "git"
         },
         {
-          "background": "#424242",
-          "foreground": "#E4F34A",
+          "background": "#313244",
+          "foreground": "#CA8A04",
           "leading_diamond": " \ue0b6",
           "options": {
             "fetch_version": false
@@ -54,8 +54,8 @@
           "type": "python"
         },
         {
-          "background": "#424242",
-          "foreground": "#7FD5EA",
+          "background": "#313244",
+          "foreground": "#0E7490",
           "leading_diamond": " \ue0b6",
           "options": {
             "fetch_version": false
@@ -66,8 +66,8 @@
           "type": "go"
         },
         {
-          "background": "#424242",
-          "foreground": "#42E66C",
+          "background": "#313244",
+          "foreground": "#15803D",
           "leading_diamond": " \ue0b6",
           "options": {
             "fetch_version": false
@@ -78,8 +78,8 @@
           "type": "node"
         },
         {
-          "background": "#424242",
-          "foreground": "#E64747",
+          "background": "#313244",
+          "foreground": "#DC2626",
           "leading_diamond": " \ue0b6",
           "options": {
             "fetch_version": false
@@ -90,8 +90,8 @@
           "type": "ruby"
         },
         {
-          "background": "#424242",
-          "foreground": "#E64747",
+          "background": "#313244",
+          "foreground": "#B91C1C",
           "leading_diamond": " \ue0b6",
           "options": {
             "fetch_version": false
@@ -102,8 +102,8 @@
           "type": "java"
         },
         {
-          "background": "#424242",
-          "foreground": "#9B6BDF",
+          "background": "#313244",
+          "foreground": "#7C3AED",
           "leading_diamond": " \ue0b6",
           "options": {
             "fetch_version": false
@@ -114,7 +114,7 @@
           "type": "julia"
         },
         {
-          "foreground": "#FFFFFF",
+          "foreground": "#CDD6F4",
           "style": "plain",
           "template": " \u276f ",
           "type": "text"

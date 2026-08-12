@@ -6,6 +6,54 @@ map("n", "<Esc>", "<cmd>noh<CR>", { desc = "Clear highlights" })
 map("n", "<C-s>", "<cmd>w<CR>", { desc = "Save file" })
 map("n", "<C-c>", "<cmd>%y+<CR>", { desc = "Copy whole file" })
 
+-- <leader>e: nvim-tree normally, netrw sidebar when the context is remote.
+-- nvim-tree only speaks the local filesystem, so scp:// paths must go to netrw.
+local function remote_dir()
+	local is_url = function(s)
+		return type(s) == "string" and s ~= "" and s:match("^%a[%w+.%-]*://") ~= nil
+	end
+
+	-- netrw records the directory it is browsing; most reliable when already in it
+	local curdir = vim.b.netrw_curdir
+	if is_url(curdir) then
+		return curdir
+	end
+
+	local name = vim.api.nvim_buf_get_name(0)
+	if is_url(name) then
+		-- a trailing slash means it is already a directory
+		if name:sub(-1) == "/" then
+			return (name:gsub("/+$", ""))
+		end
+		return vim.fn.fnamemodify(name, ":h")
+	end
+
+	local cwd = vim.fn.getcwd()
+	if is_url(cwd) then
+		return cwd
+	end
+
+	return nil
+end
+
+map("n", "<leader>e", function()
+	local dir = remote_dir()
+	if dir then
+		vim.cmd("Lexplore " .. vim.fn.fnameescape(dir))
+	else
+		vim.cmd("NvimTreeFocus")
+	end
+end, { desc = "Explorer (nvim-tree, or netrw when remote)" })
+
+-- Remote browsing (netrw sidebar; nvim-tree cannot read scp:// paths)
+map("n", "<leader>R", function()
+	vim.ui.input({ prompt = "Remote dir: ", default = "scp://" }, function(path)
+		if path and path ~= "" and path ~= "scp://" then
+			vim.cmd("Lexplore " .. vim.fn.fnameescape(path))
+		end
+	end)
+end, { desc = "Remote tree (netrw sidebar)" })
+
 -- Window navigation
 map("n", "<C-h>", "<C-w>h", { desc = "Window left" })
 map("n", "<C-l>", "<C-w>l", { desc = "Window right" })

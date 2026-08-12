@@ -1,5 +1,20 @@
-CLAUDE.md
 /.claude
 .DS_STORE
 .serena/
 *.null-ls*
+/.config
+.env.fish
+.envrc
+
+Makefile.local
+
+## DCR
+compute-manifest.yaml
+.dsp_deploy_wt
+.dcr-home
+.dcr-compute-config.yaml
+
+AGENTS.local.md
+CLAUDE.local.md
+REVIEW.local.md
+scripts.local/

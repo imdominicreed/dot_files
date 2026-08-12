@@ -4,14 +4,17 @@ return {
 	cmd = { "NvimTreeToggle", "NvimTreeFocus" },
 	keys = {
 		{ "<C-n>", "<cmd>NvimTreeToggle<cr>", desc = "Toggle nvimtree" },
-		{ "<leader>e", "<cmd>NvimTreeFocus<cr>", desc = "Focus nvimtree" },
+		-- <leader>e lives in core/keymaps.lua: it dispatches to netrw when the
+		-- current buffer is remote (scp://), since nvim-tree is local-only.
 	},
 	opts = {
 		filters = {
 			dotfiles = false,
 			exclude = { vim.fn.stdpath("config") .. "/lua/custom" },
 		},
-		disable_netrw = true,
+		-- Keep netrw loaded so scp:// remote editing works; nvim-tree still
+		-- hijacks local directory buffers.
+		disable_netrw = false,
 		hijack_netrw = true,
 		hijack_cursor = true,
 		hijack_unnamed_buffer_when_opening = false,

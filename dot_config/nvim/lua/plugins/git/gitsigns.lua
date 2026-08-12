@@ -3,6 +3,7 @@ return {
 	"lewis6991/gitsigns.nvim",
 	event = { "BufReadPre", "BufNewFile" },
 	opts = {
+		attach_to_untracked = false,
 		signs = {
 			add = { text = "│" },
 			change = { text = "│" },
@@ -12,6 +13,19 @@ return {
 			untracked = { text = "│" },
 		},
 		on_attach = function(bufnr)
+			-- Skip pseudo-buffers and remote paths. Replaces the removed
+			-- `on_attach_pre` option; on_attach returning false prevents attach.
+			local name = vim.api.nvim_buf_get_name(bufnr)
+			if
+				name:match("^octo://")
+				or name:match("^diffview://")
+				or name:match("^fugitive://")
+				or name:match("^scp://")
+				or name:match("^sftp://")
+			then
+				return false
+			end
+
 			local gs = package.loaded.gitsigns
 
 			local function map(mode, l, r, desc)

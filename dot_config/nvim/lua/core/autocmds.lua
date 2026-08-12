@@ -81,6 +81,31 @@ autocmd("FileType", {
 	end,
 })
 
+-- Make netrw behave like a proper sidebar tree (used for remote scp:// browsing)
+autocmd("FileType", {
+	group = augroup("NetrwTweaks", { clear = true }),
+	pattern = "netrw",
+	callback = function(event)
+		local o = vim.opt_local
+		o.number = false
+		o.relativenumber = false
+		o.winfixwidth = true -- sidebar keeps its width when other splits open
+		o.cursorline = true
+		o.signcolumn = "yes" -- netrw.nvim renders its icons here
+		vim.bo[event.buf].buflisted = false
+
+		local kmap = function(lhs, rhs, desc)
+			vim.keymap.set("n", lhs, rhs, { buffer = event.buf, silent = true, remap = true, desc = desc })
+		end
+
+		kmap("h", "-", "Up a directory")
+		kmap("l", "<CR>", "Open / descend")
+		kmap("q", "<cmd>close<CR>", "Close explorer")
+		-- netrw's own refresh is <C-l>, which the global window-nav map shadows.
+		kmap("R", "<C-l>", "Refresh listing")
+	end,
+})
+
 -- Auto create dir when saving a file
 autocmd("BufWritePre", {
 	group = augroup("AutoCreateDir", { clear = true }),

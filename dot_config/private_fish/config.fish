@@ -6,6 +6,7 @@ if status is-interactive
     abbr -a la 'ls -A'
     abbr -a l 'ls -CF'
     abbr -a grep 'grep --color=auto'
+    abbr -a ml 'make -f Makefile.local'
     abbr -a fgrep 'fgrep --color=auto'
     abbr -a egrep 'egrep --color=auto'
 
@@ -23,9 +24,10 @@ end
 
 # PATH additions
 fish_add_path /usr/local/bin
+fish_add_path $HOME/.rebar/current/bin
 fish_add_path $HOME/.local/bin
 fish_add_path $HOME/.pyenv/bin
-fish_add_path /usr/local/go/bin
+# go is provided by Homebrew via /opt/homebrew/bin; $HOME/go/bin holds GOPATH tools
 fish_add_path $HOME/go/bin
 
 # NVM node path (ensures NVM's node takes priority over system nodejs)
@@ -52,9 +54,7 @@ end
 set -gx PATH "$HOME/.local/bin" $PATH
 fnm env --shell fish | source
 
-source ~/.config/fish/configs/gcloud-config.fish
-source ~/.config/fish/configs/macos-config.fish
-
 ### Posh Setup
 oh-my-posh init --config "~/.config/fish/themes/bubbleleft.json" fish | source
 
+direnv hook fish | source
