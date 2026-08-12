@@ -1,22 +1,26 @@
 [user]
 	name = imdominicreed
-	email = dominic.reed@virtru.com
-	signingkey = 5C5E5271960A5EB0
+	email = {{ .email }}
+{{- if .signCommits }}
+	signingkey = {{ .signingkey }}
+{{- end }}
 
 [core]
 	excludesfile = ~/.gitignore_global
 [credential]
 	helper = cache --timeout=2592000
 [credential "https://github.com"]
-	helper = 
-	helper = !/opt/homebrew/bin/gh auth git-credential
+	helper =
+	helper = !{{ lookPath "gh" | default "gh" }} auth git-credential
 [credential "https://gist.github.com"]
-	helper = 
-	helper = !/opt/homebrew/bin/gh auth git-credential
+	helper =
+	helper = !{{ lookPath "gh" | default "gh" }} auth git-credential
 [commit]
-	gpgsign = true
+	gpgsign = {{ .signCommits }}
+{{- if lookPath "git-lfs" }}
 [filter "lfs"]
 	clean = git-lfs clean -- %f
 	smudge = git-lfs smudge -- %f
 	process = git-lfs filter-process
 	required = true
+{{- end }}

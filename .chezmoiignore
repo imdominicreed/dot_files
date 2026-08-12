@@ -5,3 +5,8 @@ LICENSE
 .github
 .gitignore
 .DS_STORE
+
+# Generated state, not config. fish_add_path in config.fish writes into
+# fish_user_paths, which lives here — syncing it ships one machine's absolute
+# paths to the other and fights the config that generates it.
+.config/fish/fish_variables

@@ -22,13 +22,17 @@ if test -f ~/.secrets
     source ~/.secrets
 end
 
-# PATH additions
-fish_add_path /usr/local/bin
-fish_add_path $HOME/.rebar/current/bin
-fish_add_path $HOME/.local/bin
-fish_add_path $HOME/.pyenv/bin
-# go is provided by Homebrew via /opt/homebrew/bin; $HOME/go/bin holds GOPATH tools
-fish_add_path $HOME/go/bin
+# PATH additions — each guarded so the same config works on every machine.
+# fish_add_path prepends, so later entries win.
+test -d /usr/local/bin; and fish_add_path /usr/local/bin
+test -d $HOME/.rebar/current/bin; and fish_add_path $HOME/.rebar/current/bin
+test -d $HOME/.local/bin; and fish_add_path $HOME/.local/bin
+test -d $HOME/.pyenv/bin; and fish_add_path $HOME/.pyenv/bin
+# go comes from Homebrew (/opt/homebrew/bin) on macOS and /usr/local/go/bin on Linux;
+# $HOME/go/bin holds GOPATH tools
+test -d /opt/homebrew/bin; and fish_add_path /opt/homebrew/bin
+test -d /usr/local/go/bin; and fish_add_path /usr/local/go/bin
+test -d $HOME/go/bin; and fish_add_path $HOME/go/bin
 
 # NVM node path (ensures NVM's node takes priority over system nodejs)
 set -l nvm_default_path "$HOME/.nvm/versions/node/v22.13.1/bin"
@@ -57,4 +61,6 @@ fnm env --shell fish | source
 ### Posh Setup
 oh-my-posh init --config "~/.config/fish/themes/bubbleleft.json" fish | source
 
-direnv hook fish | source
+if command -q direnv
+    direnv hook fish | source
+end
