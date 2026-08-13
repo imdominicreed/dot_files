@@ -174,7 +174,9 @@ return {
 		{ "<leader>sr", function() Snacks.picker.recent() end, desc = "Recent Files" },
 		{ "<leader>s/", function() Snacks.picker.lines() end, desc = "Buffer Lines" },
 		-- Git
-		{ "<leader>gd", git_log_diff_against_head, desc = "Diff Commit Against HEAD" },
+		-- <leader>gd belongs to diffview's stack diff; this takes the slot freed
+		-- when the plain commit picker moved to <leader>gC.
+		{ "<leader>gc", git_log_diff_against_head, desc = "Diff Commit Against HEAD" },
 		{ "<leader>gC", function() Snacks.picker.git_log() end, desc = "Git Commits" },
 		{ "<leader>gs", function() Snacks.picker.git_status() end, desc = "Git Status" },
 		-- Other

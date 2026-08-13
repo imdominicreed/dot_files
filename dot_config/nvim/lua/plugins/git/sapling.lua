@@ -1,7 +1,7 @@
 -- sapling.nvim - Interactive Smartlog for Sapling
 return {
 	"imdominicreed/nvim-sapling",
-	version = "*", -- latest tagged release; use branch = "main" to track tip
+	branch = "main", -- track tip, not the tagged release
 	main = "sapling",
 	cmd = "Sapling",
 	keys = {

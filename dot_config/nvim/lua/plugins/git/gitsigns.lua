@@ -13,16 +13,10 @@ return {
 			untracked = { text = "│" },
 		},
 		on_attach = function(bufnr)
-			-- Skip pseudo-buffers and remote paths. Replaces the removed
-			-- `on_attach_pre` option; on_attach returning false prevents attach.
+			-- Skip pseudo-buffers. Replaces the removed `on_attach_pre` option;
+			-- on_attach returning false prevents attach.
 			local name = vim.api.nvim_buf_get_name(bufnr)
-			if
-				name:match("^octo://")
-				or name:match("^diffview://")
-				or name:match("^fugitive://")
-				or name:match("^scp://")
-				or name:match("^sftp://")
-			then
+			if name:match("^diffview://") or name:match("^fugitive://") then
 				return false
 			end
 

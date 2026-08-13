@@ -6,54 +6,6 @@ map("n", "<Esc>", "<cmd>noh<CR>", { desc = "Clear highlights" })
 map("n", "<C-s>", "<cmd>w<CR>", { desc = "Save file" })
 map("n", "<C-c>", "<cmd>%y+<CR>", { desc = "Copy whole file" })
 
--- <leader>e: nvim-tree normally, netrw sidebar when the context is remote.
--- nvim-tree only speaks the local filesystem, so scp:// paths must go to netrw.
-local function remote_dir()
-	local is_url = function(s)
-		return type(s) == "string" and s ~= "" and s:match("^%a[%w+.%-]*://") ~= nil
-	end
-
-	-- netrw records the directory it is browsing; most reliable when already in it
-	local curdir = vim.b.netrw_curdir
-	if is_url(curdir) then
-		return curdir
-	end
-
-	local name = vim.api.nvim_buf_get_name(0)
-	if is_url(name) then
-		-- a trailing slash means it is already a directory
-		if name:sub(-1) == "/" then
-			return (name:gsub("/+$", ""))
-		end
-		return vim.fn.fnamemodify(name, ":h")
-	end
-
-	local cwd = vim.fn.getcwd()
-	if is_url(cwd) then
-		return cwd
-	end
-
-	return nil
-end
-
-map("n", "<leader>e", function()
-	local dir = remote_dir()
-	if dir then
-		vim.cmd("Lexplore " .. vim.fn.fnameescape(dir))
-	else
-		vim.cmd("NvimTreeFocus")
-	end
-end, { desc = "Explorer (nvim-tree, or netrw when remote)" })
-
--- Remote browsing (netrw sidebar; nvim-tree cannot read scp:// paths)
-map("n", "<leader>R", function()
-	vim.ui.input({ prompt = "Remote dir: ", default = "scp://" }, function(path)
-		if path and path ~= "" and path ~= "scp://" then
-			vim.cmd("Lexplore " .. vim.fn.fnameescape(path))
-		end
-	end)
-end, { desc = "Remote tree (netrw sidebar)" })
-
 -- Window navigation
 map("n", "<C-h>", "<C-w>h", { desc = "Window left" })
 map("n", "<C-l>", "<C-w>l", { desc = "Window right" })
@@ -102,3 +54,35 @@ end, { desc = "LSP formatting" })
 -- Copilot
 vim.g.copilot_no_tab_map = true
 map("i", "<C-y>", 'copilot#Accept("\\<CR>")', { expr = true, silent = true, desc = "Accept Copilot suggestion" })
+
+-- One key to dismiss whatever diff is on screen, whichever plugin drew it.
+-- Lives here rather than in a plugin spec because it spans several: a lazy
+-- `keys` entry would load that one plugin just to ask it to close.
+map("n", "<leader>gq", function()
+	-- diffview owns an entire tab page, so it is the most disruptive and goes
+	-- first. `get_current_view` is nil unless one is actually open.
+	local ok, lib = pcall(require, "diffview.lib")
+	if ok and lib.get_current_view() then
+		vim.cmd("DiffviewClose")
+		return
+	end
+
+	-- mini.diff's overlay is drawn over a real buffer: dismiss the diff and
+	-- leave you in the file, which is what sapling.nvim's `d` opens.
+	local buf = vim.api.nvim_get_current_buf()
+	if _G.MiniDiff then
+		local data = MiniDiff.get_buf_data(buf)
+		if data and data.overlay then
+			MiniDiff.toggle_overlay(buf)
+			return
+		end
+	end
+
+	vim.notify("No diff view to close", vim.log.levels.INFO)
+end, { desc = "Close any diff view" })
+
+-- Tabs. Not bound on bare `tc`: `t` is the built-in till-motion, so making it a
+-- mapping prefix would cost every `t<char>` a 'timeoutlen' wait.
+map("n", "<leader>tc", "<cmd>tabclose<CR>", { desc = "Close tab" })
+map("n", "<leader>tn", "<cmd>tabnew<CR>", { desc = "New tab" })
+map("n", "<leader>to", "<cmd>tabonly<CR>", { desc = "Close other tabs" })

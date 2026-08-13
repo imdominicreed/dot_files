@@ -48,8 +48,10 @@ require("lazy").setup({
 				"getscriptPlugin",
 				"gzip",
 				"logipat",
-				-- netrw* intentionally NOT disabled: it provides the scp:// / sftp://
-				-- transport used for editing remote files (e.g. :e scp://host//path).
+				"netrw",
+				"netrwPlugin",
+				"netrwSettings",
+				"netrwFileHandlers",
 				"matchit",
 				"tar",
 				"tarPlugin",

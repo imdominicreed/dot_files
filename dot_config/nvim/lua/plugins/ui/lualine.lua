@@ -4,10 +4,6 @@ return {
 	event = "VeryLazy",
 	dependencies = { "nvim-tree/nvim-web-devicons" },
 	opts = function()
-		-- Skip git-shelling components on synthetic buffers (octo://, diffview://, etc.)
-		local function is_real_file()
-			return vim.bo.buftype == "" and not vim.api.nvim_buf_get_name(0):match("^%w+://")
-		end
 		return {
 			options = {
 				theme = "auto",
@@ -15,7 +11,7 @@ return {
 				component_separators = { left = "", right = "" },
 				section_separators = { left = "", right = "" },
 				disabled_filetypes = {
-					statusline = { "dashboard", "alpha", "starter", "Octo", "DiffviewFiles" },
+					statusline = { "dashboard", "alpha", "starter", "DiffviewFiles" },
 				},
 				refresh = { statusline = 1000 },
 			},

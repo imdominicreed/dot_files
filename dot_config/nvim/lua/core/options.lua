@@ -6,19 +6,6 @@ local g = vim.g
 g.mapleader = " "
 g.maplocalleader = " "
 
--- netrw: used as the sidebar file tree for remote (scp://) browsing, since
--- nvim-tree is local-filesystem only. :Lexplore opens it as a left split.
-g.netrw_liststyle = 3 -- tree listing
-g.netrw_winsize = 25 -- 25% width
-g.netrw_banner = 0 -- no header blurb
-g.netrw_browse_split = 4 -- open files in the previous window
-g.netrw_fastbrowse = 2 -- keep cached listings (big win over ssh); R to refresh
-g.netrw_keepdir = 0 -- cwd follows the browsed dir, so :e/:find work relatively
-g.netrw_sizestyle = "H" -- human-readable file sizes
-g.netrw_localcopydircmd = "cp -r" -- recursive copy instead of failing on dirs
-g.netrw_preview = 1 -- p previews in a vertical split
-g.netrw_alto = 0
-
 -- General
 opt.clipboard = "unnamedplus"
 opt.mouse = "a"
