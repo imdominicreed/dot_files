@@ -10,3 +10,8 @@ LICENSE
 # fish_user_paths, which lives here — syncing it ships one machine's absolute
 # paths to the other and fights the config that generates it.
 .config/fish/fish_variables
+
+# Machine-local nvim overrides, sourced by init.lua if present. Ignoring it here
+# is the point: each machine keeps its own, and `chezmoi add`/`apply` leave it
+# alone, so a local tweak never has to be reconciled with the repo.
+.config/nvim/lua/machine.lua

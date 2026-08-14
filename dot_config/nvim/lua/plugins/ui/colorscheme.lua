@@ -7,7 +7,9 @@ return {
 	config = function()
 		require("catppuccin").setup({
 			flavour = "mocha",
-			transparent_background = true,
+			-- On unless this machine opted out in lua/machine.lua with
+			--   vim.g.transparent_background = false
+			transparent_background = vim.g.transparent_background ~= false,
 			integrations = {
 				auto_integations = true,
 			-- 	cmp = true,
