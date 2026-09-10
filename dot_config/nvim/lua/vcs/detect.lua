@@ -23,6 +23,22 @@ local function memo(kind, dir, probe)
 	return cache[key] or nil
 end
 
+---Is this VCS installed at all? Memoised: `executable()` walks $PATH, and the
+---probes below run per buffer attach.
+---
+---This guard is not optional. `vim.system` *throws* ENOENT when the binary is
+---missing rather than returning a non-zero exit, so an unguarded probe does not
+---degrade to "not a repo" on a machine without the tool - it raises out through
+---whatever called it, taking gitsigns' attach, mini.diff's attach and the
+---diff/smartlog keymaps with it.
+local function installed(exe)
+	local key = "exe\0" .. exe
+	if cache[key] == nil then
+		cache[key] = vim.fn.executable(exe) == 1
+	end
+	return cache[key]
+end
+
 ---Read a file whose entire contents are a single path.
 local function read_path(file)
 	local fd = io.open(file, "r")
@@ -39,6 +55,8 @@ end
 ---@param dir string
 ---@return string?
 function M.jj_root(dir)
+	if not installed("jj") then return nil end
+
 	return memo("jj", dir, function(d)
 		-- `--ignore-working-copy` matters: without it a mere location query
 		-- snapshots the working copy into `@`, which is both slower and a
@@ -60,6 +78,8 @@ end
 ---@param dir string
 ---@return string?
 function M.sapling_root(dir)
+	if not installed("sl") then return nil end
+
 	return memo("sl", dir, function(d)
 		local res = vim.system(
 			{ "sl", "--pager", "never", "root", "--dotdir" },
@@ -112,6 +132,8 @@ end
 ---@param revset string
 ---@return string?
 function M.jj_rev(root, revset)
+	if not installed("jj") then return nil end
+
 	local res = vim.system({
 		"jj", "--no-pager", "log", "--ignore-working-copy",
 		"--revisions", revset, "--no-graph", "--template", "commit_id",

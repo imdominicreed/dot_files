@@ -43,6 +43,61 @@ local function jj_range(root, base_revset)
 	return head and (base .. ".." .. head) or nil
 end
 
+---Run a git command in `dir`, returning its trimmed first line, or nil.
+local function git(dir, args)
+	if vim.fn.executable("git") ~= 1 then return nil end
+
+	local res = vim.system(
+		vim.list_extend({ "git", "-C", dir }, args),
+		{ text = true }
+	):wait(3000)
+	if res.code ~= 0 then return nil end
+
+	local out = vim.trim((res.stdout or ""):gsub("\n.*", ""))
+	return out ~= "" and out or nil
+end
+
+---What this git repo considers the base of the current branch.
+---
+---Asked rather than assumed: `origin/main` is not universal, and when the guess
+---is wrong diffview reports only "Not a repo (or any parent), or no supported
+---VCS adapter!" — which sends you looking for a broken repo instead of a
+---misnamed branch.
+local function git_base(dir)
+	-- What this branch actually tracks is the best answer when it exists.
+	local upstream = git(dir, { "rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{upstream}" })
+	if upstream then return upstream end
+
+	-- Failing that, the remote's own idea of its default branch.
+	local origin_head = git(dir, { "symbolic-ref", "--short", "refs/remotes/origin/HEAD" })
+	if origin_head then return origin_head end
+
+	for _, guess in ipairs({ "origin/main", "origin/master", "main", "master" }) do
+		if git(dir, { "rev-parse", "--verify", "--quiet", guess }) then return guess end
+	end
+
+	return nil
+end
+
+---The git spelling of `diff_stack`.
+local function git_stack(dir)
+	if not git(dir, { "rev-parse", "--git-dir" }) then
+		vim.notify("Not in a jj, Sapling or git repo", vim.log.levels.WARN)
+		return
+	end
+
+	local base = git_base(dir)
+	if not base then
+		-- A repo with no upstream and no main/master has no stack to speak of,
+		-- so show the uncommitted changes rather than erroring.
+		vim.notify("No base branch found; showing uncommitted changes", vim.log.levels.INFO)
+		vim.cmd("DiffviewOpen")
+		return
+	end
+
+	vim.cmd("DiffviewOpen " .. base .. "...HEAD")
+end
+
 ---Diff the whole stack: every draft commit on top of the last public ancestor,
 ---plus whatever is not yet part of a finished commit.
 local function diff_stack()
@@ -80,7 +135,7 @@ local function diff_stack()
 	end
 
 	-- Plain git: the same question, in the only spelling git has for it.
-	vim.cmd("DiffviewOpen origin/main...HEAD")
+	git_stack(dir)
 end
 
 ---Diff only what is not yet part of a finished commit.
