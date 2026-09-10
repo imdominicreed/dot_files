@@ -12,4 +12,13 @@ require("core.keymaps")
 require("core.autocmds")
 
 -- Folding, navigation and quickfix for gh-reviews pull-request reports.
-require("ghreviews").setup()
+--
+-- Guarded because init.lua and lua/ghreviews/ can arrive separately: a dotfiles
+-- commit carrying one without the other should cost you review folding, not
+-- every start on that machine. A module that is present but broken still shouts.
+local has_ghreviews, ghreviews = pcall(require, "ghreviews")
+if has_ghreviews then
+	ghreviews.setup()
+elseif not tostring(ghreviews):match("module 'ghreviews' not found") then
+	vim.notify(tostring(ghreviews), vim.log.levels.ERROR)
+end
