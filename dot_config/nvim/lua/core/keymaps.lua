@@ -81,6 +81,49 @@ map("n", "<leader>gq", function()
 	vim.notify("No diff view to close", vim.log.levels.INFO)
 end, { desc = "Close any diff view" })
 
+-- One key for "show me the graph of what I am working on", whichever VCS this
+-- repo happens to use. Same reasoning as <leader>gq: a lazy `keys` entry in
+-- either plugin spec would claim the key for that plugin alone, and these two
+-- have to be chosen between at press time.
+--
+-- Both smartlogs are `cmd`-lazy, so dispatching through :J / :Sapling still
+-- loads whichever plugin is actually wanted and neither one before that.
+local function smartlog()
+	local detect = require("vcs.detect")
+
+	-- Anchor on the buffer's own directory, not the cwd: with a file open from
+	-- another repo, the file is what you mean. Fall back to the cwd for
+	-- scratch buffers, which have no path of their own.
+	local name = vim.api.nvim_buf_get_name(0)
+	local dir = name ~= "" and vim.fs.dirname(name) or vim.fn.getcwd()
+
+	if detect.jj_root(dir) then
+		vim.cmd("J log")
+	elseif detect.sapling_root(dir) then
+		vim.cmd("Sapling toggle")
+	else
+		vim.notify("Not in a jj or Sapling repo", vim.log.levels.WARN)
+	end
+end
+
+map("n", "<leader>s", smartlog, { desc = "Smartlog (jj/Sapling)" })
+-- Alternative that does not collide with the <leader>s search group.
+map("n", "<leader>gl", smartlog, { desc = "Smartlog (jj/Sapling)" })
+
+-- gitsigns owns <leader>gb, but only where it attaches, and it stays away from
+-- jj repos (see gitsigns.lua). Its buffer-local map still wins in a git repo;
+-- this global one only ever fires where there is no gitsigns to ask.
+map("n", "<leader>gb", function()
+	local detect = require("vcs.detect")
+	local name = vim.api.nvim_buf_get_name(0)
+
+	if name ~= "" and detect.jj_root(vim.fs.dirname(name)) then
+		vim.cmd("J annotate_line")
+	else
+		vim.notify("No blame available for this buffer", vim.log.levels.WARN)
+	end
+end, { desc = "Blame line" })
+
 -- Tabs. Not bound on bare `tc`: `t` is the built-in till-motion, so making it a
 -- mapping prefix would cost every `t<char>` a 'timeoutlen' wait.
 map("n", "<leader>tc", "<cmd>tabclose<CR>", { desc = "Close tab" })

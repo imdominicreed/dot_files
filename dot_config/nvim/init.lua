@@ -10,3 +10,6 @@ require("core.options")
 require("core.lazy")
 require("core.keymaps")
 require("core.autocmds")
+
+-- Folding, navigation and quickfix for gh-reviews pull-request reports.
+require("ghreviews").setup()

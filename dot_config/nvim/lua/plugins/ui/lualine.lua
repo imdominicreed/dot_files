@@ -1,50 +1,68 @@
 -- Lualine - Statusline
 
--- Sapling has no git branch for lualine's built-in `branch` component to find,
--- so the statusline's VCS slot goes blank inside a Sapling repo. This fills it
--- with the active bookmark, or the short hash when the commit has none.
+-- Neither jj nor Sapling gives lualine's built-in `branch` component anything
+-- to show. Sapling has no git branch at all, and a colocated jj repo leaves
+-- git's HEAD permanently detached, so the component renders a bare "HEAD". This
+-- fills the slot with what actually names the current commit instead: the
+-- bookmarks it carries, or a short id when it has none.
 --
--- `sl` is never shelled out from the component itself: a statusline redraws far
--- too often for that. The value is refreshed asynchronously on the events that
--- can actually change it and memoised per directory, so drawing is a table
--- lookup. A nil entry means "not looked up yet", an empty string "not a Sapling
--- repo" — the two must stay distinct or every redraw re-runs the lookup.
-local sl_head = {}
+-- Neither `jj` nor `sl` is ever shelled out from the component itself: a
+-- statusline redraws far too often for that. The value is refreshed
+-- asynchronously on the events that can change it and memoised per directory,
+-- so drawing is a table lookup. A nil entry means "not looked up yet", an empty
+-- string "no VCS of ours here" — the two must stay distinct or every redraw
+-- re-runs the lookup.
+local vcs_head = {}
 
-local function refresh_sapling_head(force)
-	if vim.fn.executable("sl") ~= 1 then
-		return
-	end
+-- Which VCS a directory belongs to is asked through vcs.detect, which memoises
+-- it: that probe is a few milliseconds once per directory, and this runs on
+-- events rather than on redraw. Only the head lookup itself — the slow half —
+-- stays asynchronous.
+local head_probes = {
+	{
+		exe = "jj",
+		root = function(dir) return require("vcs.detect").jj_root(dir) end,
+		-- `--ignore-working-copy` keeps drawing a statusline from snapshotting
+		-- the working copy as a side effect.
+		cmd = {
+			"jj", "--no-pager", "log", "--ignore-working-copy",
+			"--revisions", "@", "--no-graph",
+			"--template", 'if(bookmarks, bookmarks.join(" "), change_id.shortest(8))',
+		},
+	},
+	{
+		exe = "sl",
+		root = function(dir) return require("vcs.detect").sapling_root(dir) end,
+		cmd = {
+			"sl", "--pager", "never", "log", "-r", ".",
+			"--template", '{ifeq(join(bookmarks, ""), "", shortest(node, 8), join(bookmarks, " "))}',
+		},
+	},
+}
 
+local function refresh_vcs_head(force)
 	local cwd = vim.uv.cwd() or ""
-	if not force and sl_head[cwd] ~= nil then
+	if not force and vcs_head[cwd] ~= nil then
 		return
 	end
-	sl_head[cwd] = sl_head[cwd] or ""
+	vcs_head[cwd] = vcs_head[cwd] or ""
 
-	vim.system({ "sl", "--pager", "never", "root", "--dotdir" }, { cwd = cwd, text = true }, function(root)
-		-- Sapling drives plain git repos too, reporting `<root>/.git/sl`. Only
-		-- native repos (`<root>/.sl`) are ours; the rest keep the git branch
-		-- component. Same test as diffview.lua and mini-diff.lua.
-		local dotdir = vim.trim(root.stdout or "")
-		if root.code ~= 0 or dotdir:sub(-4) ~= "/.sl" then
-			sl_head[cwd] = ""
+	for _, probe in ipairs(head_probes) do
+		if vim.fn.executable(probe.exe) == 1 and probe.root(cwd) then
+			vim.system(probe.cmd, { cwd = cwd, text = true }, function(res)
+				vcs_head[cwd] = res.code == 0 and vim.trim(res.stdout) or ""
+			end)
 			return
 		end
+	end
 
-		local template = '{ifeq(join(bookmarks, ""), "", shortest(node, 8), join(bookmarks, " "))}'
-		vim.system(
-			{ "sl", "--pager", "never", "log", "-r", ".", "--template", template },
-			{ cwd = cwd, text = true },
-			function(res)
-				sl_head[cwd] = res.code == 0 and vim.trim(res.stdout) or ""
-			end
-		)
-	end)
+	-- Not a repo either of them owns: leave the slot to the git `branch`
+	-- component, which handles that case perfectly well.
+	vcs_head[cwd] = ""
 end
 
-local function sapling_head()
-	local head = sl_head[vim.uv.cwd() or ""]
+local function vcs_head_component()
+	local head = vcs_head[vim.uv.cwd() or ""]
 	return (head and head ~= "") and (" " .. head) or ""
 end
 
@@ -65,7 +83,13 @@ return {
 		},
 		sections = {
 			lualine_a = { "mode" },
-			lualine_b = { sapling_head, "branch" },
+			lualine_b = {
+				vcs_head_component,
+				-- A colocated jj repo keeps git's HEAD detached, so `branch`
+				-- renders the parent commit's hash next to the head above it.
+				-- Show it only where it is the one saying anything.
+				{ "branch", cond = function() return vcs_head_component() == "" end },
+			},
 			lualine_c = {
 				{
 					"diagnostics",
@@ -83,17 +107,23 @@ return {
 				{
 					"diff",
 					source = function()
-						-- gitsigns owns git repos...
-						local gs = vim.b.gitsigns_status_dict
-						if gs then
-							return { added = gs.added, modified = gs.changed, removed = gs.removed }
-						end
-
-						-- ...and mini.diff owns Sapling ones, where gitsigns is
-						-- hard-wired to git and never attaches.
+						-- mini.diff is asked first because it only ever attaches
+						-- where it owns the buffer - a jj or Sapling repo - and
+						-- the two never overlap.
+						--
+						-- Order matters here: gitsigns publishes
+						-- `gitsigns_status_dict` from the repo context alone, so
+						-- in a colocated jj repo the table exists and is merely
+						-- empty of counts even though gitsigns declined to
+						-- attach. Reading it first would show no diff at all.
 						local md = vim.b.minidiff_summary
 						if md then
 							return { added = md.add, modified = md.change, removed = md.delete }
+						end
+
+						local gs = vim.b.gitsigns_status_dict
+						if gs then
+							return { added = gs.added, modified = gs.changed, removed = gs.removed }
 						end
 					end,
 					symbols = {
@@ -119,20 +149,20 @@ return {
 		require("lualine").setup(opts)
 
 		vim.api.nvim_create_autocmd({ "DirChanged", "FocusGained", "BufWritePost" }, {
-			group = vim.api.nvim_create_augroup("LualineSaplingHead", { clear = true }),
+			group = vim.api.nvim_create_augroup("LualineVcsHead", { clear = true }),
 			callback = function()
-				refresh_sapling_head(true)
+				refresh_vcs_head(true)
 			end,
 		})
 		-- Entering a buffer only fills a directory not seen yet; the events above
 		-- are the ones that can move the bookmark or commit out from under us.
 		vim.api.nvim_create_autocmd("BufEnter", {
-			group = "LualineSaplingHead",
+			group = "LualineVcsHead",
 			callback = function()
-				refresh_sapling_head(false)
+				refresh_vcs_head(false)
 			end,
 		})
 
-		refresh_sapling_head(true)
+		refresh_vcs_head(true)
 	end,
 }

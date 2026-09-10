@@ -20,6 +20,15 @@ return {
 				return false
 			end
 
+			-- A colocated jj repo has a real `.git`, so gitsigns attaches
+			-- happily and even draws the right hunks - jj parks the git index
+			-- on `@-`, which is the same base mini.diff uses. That is a
+			-- coincidence of colocation rather than a guarantee, and it would
+			-- double up on mini.diff's signs, so jj repos go to mini.diff.
+			if require("vcs.detect").jj_root(vim.fs.dirname(name)) then
+				return false
+			end
+
 			local gs = package.loaded.gitsigns
 
 			local function map(mode, l, r, desc)
