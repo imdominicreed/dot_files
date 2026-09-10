@@ -1,0 +1,80 @@
+[user]
+name = "Dominic Reed"
+email = "{{ .email }}"
+
+[aliases]
+pr = ["util", "exec", "--", "{{ .chezmoi.homeDir }}/.config/jj/jj-gh-workspace", "pr"]
+l = ["pr", "log"]
+
+[jj-gh]
+nerdfonts = false
+pr_log_template = '''
+change_id.shortest(7) ++ " " ++
+committer.timestamp().ago() ++
+surround(" ", "", pr_meta) ++ " " ++
+if(self.contained_in("first_parent(@)"), label("git_head_label", "HEAD "), "") ++
+if(conflict, label("conflict", "(conflict) "), "") ++
+if(divergent, label("divergent", "(divergent) "), "") ++
+separate(", ",
+  self.remote_bookmarks().filter(|r| r.remote() == "origin").map(|r| label("bookmark", "✦" ++ r.name())),
+  self.local_bookmarks().map(|r| label("bookmark", r.name())),
+  self.tags().map(|r| label("bookmark", r.name())),
+) ++
+if(author.email() == "you@example.com", "", " " ++ author.email()) ++
+"\n " ++
+commit_id.shortest(6) ++ " " ++
+if(conflict, label("conflict", "×× "), "") ++
+if(divergent, label("divergent", "﹖ "), "") ++
+if(empty,
+  label("empty", "(empty) ") ++ description.first_line(),
+  if(description.first_line(),
+    description.first_line(),
+    label("empty description placeholder", "(no description)")
+  )
+) ++
+"\n"
+'''
+#:schema https://docs.jj-vcs.dev/latest/config-schema.json
+{{- if .signCommits }}
+[signing]
+behavior = "own"
+backend = "gpg"
+key = "{{ .signingkey }}"
+sign-all = true
+{{- end }}
+
+[templates]
+log = '''
+change_id.shortest(7) ++ " " ++
+committer.timestamp().ago() ++ " " ++
+if(self.contained_in("first_parent(@)"), label("git_head_label", "HEAD "), "") ++
+if(conflict, label("conflict", "(conflict) "), "") ++
+if(divergent, label("divergent", "(divergent) "), "") ++
+separate(", ",
+  self.remote_bookmarks().filter(|r| r.remote() == "origin").map(|r| label("bookmark", "✦" ++ r.name())),
+  self.local_bookmarks().map(|r| label("bookmark", r.name())),
+  self.tags().map(|r| label("bookmark", r.name())),
+) ++
+if(author.email() == "you@example.com", "", " " ++ author.email()) ++
+"\n " ++
+commit_id.shortest(6) ++ " " ++
+if(conflict, label("conflict", "×× "), "") ++
+if(divergent, label("divergent", "﹖ "), "") ++
+if(empty,
+  label("empty", "(empty) ") ++ description.first_line(),
+  if(description.first_line(),
+    description.first_line(),
+    label("empty description placeholder", "(no description)")
+  )
+) ++
+"\n"
+'''
+
+[colors]
+git_head_label = { fg = "bright magenta", bold = true }
+conflict       = { fg = "magenta", bold = false }
+divergent      = { fg = "yellow",  bold = false }
+bookmark       = { fg = "green" }
+
+[ui]
+default-command = ["pr", "log"]

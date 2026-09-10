@@ -1,0 +1,45 @@
+#!/bin/zsh
+
+set -eu
+
+jj_gh="$HOME/.cargo/bin/jj-gh"
+
+# jj-gh discovers Git from the current jj workspace root. Secondary jj
+# workspaces have only a .jj/repo pointer, so run PR-log discovery from the
+# colocated primary workspace and point the rendered jj log back at this one.
+if [[ "${1:-}" != "pr" || "${2:-}" != "log" ]]; then
+  exec "$jj_gh" "$@"
+fi
+
+workspace_root=$(jj workspace root)
+if [[ -e "$workspace_root/.git" ]]; then
+  exec "$jj_gh" "$@"
+fi
+
+repo_pointer="$workspace_root/.jj/repo"
+if [[ ! -f "$repo_pointer" ]]; then
+  exec "$jj_gh" "$@"
+fi
+
+repo_reference=$(<"$repo_pointer")
+shared_repo=$(realpath "$workspace_root/.jj/$repo_reference")
+primary_root=$(dirname "$(dirname "$shared_repo")")
+if [[ ! -e "$primary_root/.git" ]]; then
+  exec "$jj_gh" "$@"
+fi
+
+shift 2
+typeset -a jj_gh_args jj_log_args
+forwarding=false
+for arg in "$@"; do
+  if [[ "$forwarding" == false && "$arg" == "--" ]]; then
+    forwarding=true
+  elif [[ "$forwarding" == true ]]; then
+    jj_log_args+=("$arg")
+  else
+    jj_gh_args+=("$arg")
+  fi
+done
+
+cd "$primary_root"
+exec "$jj_gh" pr log "${jj_gh_args[@]}" -- -R "$workspace_root" "${jj_log_args[@]}"
